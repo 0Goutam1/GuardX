@@ -22,7 +22,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 // Retrieve the security log channel ID from the .env file
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 
-client.once('ready', () => {
+client.once('clientReady', () => {
   console.log(`GuardX is online and logged in as ${client.user.tag}!`);
 });
 
