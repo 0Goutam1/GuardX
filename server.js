@@ -1,11 +1,12 @@
+
 import { Client, GatewayIntentBits } from 'discord.js';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 
-// 1. Environment variables load karo
+// 1. Load environment variables
 dotenv.config();
 
-// 2. Bot ke liye Intents set karo (jo messages padhne ke liye zaroori hain)
+// 2. Configure the required intents for the bot
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -15,10 +16,10 @@ const client = new Client({
   ],
 });
 
-// 3. Google Gemini API initialize karo
+// 3. Initialize the Google Gemini API
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// .env se security log channel ki ID uthao
+// Retrieve the security log channel ID from the .env file
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 
 client.once('ready', () => {
@@ -26,16 +27,16 @@ client.once('ready', () => {
 });
 
 client.on('messageCreate', async (message) => {
-  // Agar message khud bot ne bheja hai, toh ignore karo
+  // Ignore messages sent by bots
   if (message.author.bot) return;
 
   const text = message.content;
 
   try {
-    // Feature 1: Agar koi '!ai' likhe, toh Gemini se jawaab lo
+    // Feature 1: If a user types '!ai', generate a response using Gemini
     if (text.startsWith('!ai ')) {
       const query = text.replace('!ai ', '');
-      
+
       const aiAnswer = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: query,
@@ -45,9 +46,9 @@ client.on('messageCreate', async (message) => {
       return;
     }
 
-    // Feature 2: Baaki sabhi messages ko security ke liye check karo
-    const prompt = `Analyze this chat message for security risks, leaked API keys, passwords, or sensitive data. 
-    If it looks safe, reply with only "SAFE". 
+    // Feature 2: Scan all other messages for potential security risks
+    const prompt = `Analyze this chat message for security risks, leaked API keys, passwords, or sensitive data.
+    If it looks safe, reply with only "SAFE".
     If it contains a leak or risk, reply starting with "WARNING:".
     Message: "${text}"`;
 
@@ -58,17 +59,18 @@ client.on('messageCreate', async (message) => {
 
     const analysis = response.text.trim();
 
-    // Agar Gemini ko koi khatra ya leak dikhta hai
+    // If Gemini detects a potential security threat or leaked information
     if (analysis.startsWith('WARNING')) {
-      // User ko public channel mein warning do
+      // Send a security warning to the user in the public channel
       await message.reply(`🚨 **SECURITY ALERT:** Hey <@${message.author.id}>, your message looks like it contains sensitive data or a secret key!`);
 
-      // Agar log channel ID di hai, toh wahan audit log bhejo
+      // If a log channel ID is configured, send an audit report there
       if (LOG_CHANNEL_ID) {
         const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+
         if (logChannel) {
           await logChannel.send(
-            `🔒 **AUDIT LOG REPORT**\n` +
+            ` **AUDIT LOG REPORT**\n` +
             `• **User:** <@${message.author.id}> (${message.author.tag})\n` +
             `• **Channel:** <#${message.channel.id}>\n` +
             `• **Leaked Message:** \`\`\`${text}\`\`\``
@@ -77,9 +79,9 @@ client.on('messageCreate', async (message) => {
       }
     }
   } catch (error) {
-    console.error('Error aagya:', error);
+    console.error('An error occurred:', error);
   }
 });
 
-// Bot ko login karo
+// Log in to Discord using the bot token
 client.login(process.env.DISCORD_TOKEN);
