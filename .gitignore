@@ -1,0 +1,9 @@
+# Environment variables (Apni API keys aur tokens ko safe rakhne ke liye)
+.env
+
+# Dependencies (Heavy folder, ise push nahi karna hota)
+node_modules/
+
+# OS/System generated files
+.DS_Store
+Thumbs.db
